@@ -41,7 +41,8 @@ sleep(2)
 webdriver.get('https://www.instagram.com/accounts/login/?source=auth_switcher')
 sleep(3)
 
-#TODO: Check if user is logged in, if not
+""" #TODO: Check if user is logged in, if not
+##### UNCOMMENT THE FIRST TIME YOU RUN IT SO IT LOGS IN  
 username = webdriver.find_element("name",'username')
 # Change with your username
 username.send_keys(USERNAME)
@@ -55,8 +56,10 @@ try:
 except:
     button_login = webdriver.find_element("css selector",'.sqdOP > .qF0y9')
 button_login.click()
-sleep(60)   
-
+sleep(60)
+##### UNCOMMENT THE FIRST TIME YOU RUN IT SO IT LOGS IN  
+ """
+ 
 try:
     savebt = webdriver.find_element("css selector",'#react-root > section > main > div > div > div > div > button')
     savebt.click()
