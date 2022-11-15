@@ -1,7 +1,7 @@
 # ❤️ SimpleInstaBot
 Instabot likes Instagram photos based on the hashtags provided
 
-**Note**: Keep likes under 1k a day, also start slowly everyday so your account doesn't get banned 
+**Note**: Keep likes under 1k a day, also start slowly everyday so your account doesn't get banned.
 <br>
 ## Set Up
 1. Download [Chrome Driver](https://www.automationtestinghub.com/download-chrome-driver/)
