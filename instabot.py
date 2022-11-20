@@ -4,6 +4,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+
 from time import sleep, strftime
 from random import randint
 from datetime import datetime
@@ -11,143 +13,195 @@ from time import sleep
 import pandas as pd
 import logging
 import sys
-import os.path
+from os import getenv, path
+from enum import Enum
+from constants import (
+    INSTAGRAM_EXPLORE_TAGS_URL,
+    INSTAGRAM_HOMEPAGE_URL,
+    INSTAGRAM_LOGIN_PAGE_URL,
+    LIKES_LOG_FILE,
+    TOTAL,
+)
 
-## USER VARIABLES 
-MAC_CHROME_PROFILE = "/Users/edgar/Library/Application Support/Google/Chrome/Default" #Ex. userpath/Library/Application Support/Google/Chrome/Default}
-chromedriver_path = '/Users/edgar/Documents/Development Projects/SimpleInstaBot/chromedriver'
-USERNAME = ""
-PASSWORD = ""
+## USER VARIABLES
+CHROME_PROFILE = getenv("CHROME_PROFILE")
+CHROMEDRIVER_PATH = getenv("CHROMEDRIVER_PATH")
+USERNAME = getenv("USERNAME")
+PASSWORD = getenv("PASSWORD")
 ##############
+
+total_likes = TOTAL
+
+
+class InstagramEnums(Enum):
+    BUTTON_TAG = "button"
+    LOGIN = "Log in"
+    USERNAME = "username"
+    PASSWORD = "password"
 
 
 start_time = datetime.now()
 
-likesLogFile = 'likes_count.log';
-total = 0;
 
 # MACOS Only
-# Gets cookies from your current chrome profile so you dont have to login everytime
+# Gets cookies from your current chrome profile, so you don't have to log in everytime
 options = webdriver.ChromeOptions()
-options.add_argument(r"user-data-dir=" + MAC_CHROME_PROFILE)
-options.add_argument('lang=pt-br')
+options.add_argument("--no-sandbox")
+# options.add_argument(r"user-data-dir=" + CHROME_PROFILE)
+# options.add_argument("lang=pt-br")
 
 # Change this to your own selenium chromedriver path!
-chromeService = Service(chromedriver_path)
+chromeService = Service(CHROMEDRIVER_PATH)
 webdriver = webdriver.Chrome(service=chromeService, options=options)
-
+webdriver.maximize_window()
 
 sleep(2)
-webdriver.get('https://www.instagram.com/accounts/login/?source=auth_switcher')
+webdriver.get(INSTAGRAM_LOGIN_PAGE_URL)
 sleep(3)
 
-""" #TODO: Check if user is logged in, if not
-##### UNCOMMENT THE FIRST TIME YOU RUN IT SO IT LOGS IN  
-username = webdriver.find_element("name",'username')
-# Change with your username
-username.send_keys(USERNAME)
-password = webdriver.find_element("name",'password')
-# Change with your password
-password.send_keys(PASSWORD)
+# TODO: Check if user is logged in, if not
+# UNCOMMENT THE FIRST TIME YOU RUN IT SO IT LOGS IN
+def selenium_instagram_login():
+    try:
+        current_url = webdriver.current_url
+        if current_url != INSTAGRAM_HOMEPAGE_URL:
+            username = webdriver.find_element("name", InstagramEnums.USERNAME.value)
+            # Change with your username
+            username.send_keys(USERNAME)
+            password = webdriver.find_element("name", InstagramEnums.PASSWORD.value)
+            # Change with your password
+            password.send_keys(PASSWORD)
+
+            buttons = webdriver.find_elements(
+                By.TAG_NAME, InstagramEnums.BUTTON_TAG.value
+            )
+            for button in buttons:
+                if button.text == InstagramEnums.LOGIN.value:
+                    webdriver.execute_script("arguments[0].click();", button)
+            new_current_url = webdriver.current_url
+            if new_current_url == INSTAGRAM_HOMEPAGE_URL:
+                print(f"Successfully logged in. Proceeding to next steps...")
+
+            sleep(60)
+
+    except Exception as e:
+        print(e)
+        # button_login = webdriver.find_element("css selector", ".sqdOP > .qF0y9")
 
 
-try:
-    button_login = webdriver.find_element("css selector",'#react-root > section > main > div > article > div > div:nth-child(1) > div > form > div:nth-child(4) > button')
-except:
-    button_login = webdriver.find_element("css selector",'.sqdOP > .qF0y9')
-button_login.click()
-sleep(60)
-##### UNCOMMENT THE FIRST TIME YOU RUN IT SO IT LOGS IN  
- """
- 
-try:
-    savebt = webdriver.find_element("css selector",'#react-root > section > main > div > div > div > div > button')
-    savebt.click()
-except:
-    pass
-
-try:
-    notnow = webdriver.find_element("css selector",'body > div.RnEpo.Yx5HN > div > div > div > div.mt3GC > button.aOOlW.HoLwm')
-    notnow.click()
-except:
-	pass
-
-# Change with hashtags you want to use
-hashtag_list = ['travel']
-
-prev_user_list = []
-
-d_users = []
-tag = -1
-likes = 0
-
-for hashtag in hashtag_list:
-    print('Currently on ' + '#' + hashtag);
-    tag += 1
-    # Opens hashtag
-    #TODO: If hashtag is like4like do something else
-    webdriver.get('https://www.instagram.com/explore/tags/'+ hashtag_list[tag] + '/')
-    sleep(8)
-
-    element = webdriver.find_element("css selector", 'div:nth-child(2) > div > .\_ac7v:nth-child(1) > .\_aabd:nth-child(1) .\_aagw')
-
-    hover = ActionChains(webdriver).move_to_element(element)
-    hover.perform()
-
-    # It clicks on first photo to open photo window
-    #first_thumbnail = webdriver.find_element("css selector",'.\_abpo')
-    first_thumbnail = webdriver.find_element("css selector",'.\_aabd')
-
-    first_thumbnail.click()
-    sleep(randint(2,3))    
-    
-    try:        
-        for x in range(1,300):
-            # Copies username of user
-            """ username = webdriver.find_element_by_xpath('/html/body/div[4]/div[2]/div/article/header/div[2]/div[1]/div[1]/div/a').text
-            print(username)
-            d_users.append(username) """
-            try:
-            # Clicks on like button
-                button_like = webdriver.find_element("css selector",'.\_aamw > .\_abl-')
-                button_like.click()
-                likes += 1
-                print(format(likes) + " " + "likes on #" + hashtag)
-            except:
-                print("Like error");
-            # Increaments likes array
-            
-            sleep(3)
-          
-            try:
-                # Next picture
-                webdriver.find_element("css selector",'.\_aaqg .\_ab6-').click()
-                sleep(randint(2,4))
-            except:
-                print("Next picture error");
+def like_hashtag():
+    try:
+        savebt = webdriver.find_element(
+            "css selector",
+            "#react-root > section > main > div > div > div > div > button",
+        )
+        savebt.click()
     except:
-        # If error occurres, skip to next hashtag
-        print("Oops!", sys.exc_info()[0], "occurred.")
-        continue
+        pass
 
-for n in range(0,len(d_users)):
-    prev_user_list.append(d_users[n])
-    
-""" updated_user_df = pd.DataFrame(prev_user_list)
-updated_user_df.to_csv('{}_users_list.csv'.format(strftime("%Y%m%d-%H%M%S"))) """
-#Creates file if not there
-if not (os.path.isfile(likesLogFile)): 
-    with open(likesLogFile,'a') as f:
-        f.write(str(0))
+    try:
+        notnow = webdriver.find_element(
+            "css selector",
+            "body > div.RnEpo.Yx5HN > div > div > div > div.mt3GC > button.aOOlW.HoLwm",
+        )
+        notnow.click()
+    except:
+        pass
 
-with open(likesLogFile, 'r') as inp:
-    content = inp.read()
-    total = int(content) + int(likes)
-    print(total);
+    # Change with hashtags you want to use
+    hashtag_list = ["travel"]
 
-with open(likesLogFile, 'w') as outp:
-    outp.write(str(total))
-print('Liked {} photos.'.format(likes))
+    prev_user_list = []
 
-end_time = datetime.now()
-print('Duration: {}'.format(end_time - start_time))
+    d_users = []
+    tag = -1
+    likes = 0
+
+    for hashtag in hashtag_list:
+        print("Currently on " + "#" + hashtag)
+        tag += 1
+        # Opens hashtag
+        # TODO: If hashtag is like4like do something else
+        webdriver.get(INSTAGRAM_EXPLORE_TAGS_URL + hashtag_list[tag] + "/")
+        sleep(8)
+
+        element = webdriver.find_element(
+            "css selector",
+            "div:nth-child(2) > div > .\_ac7v:nth-child(1) > .\_aabd:nth-child(1) .\_aagw",
+        )
+
+        hover = ActionChains(webdriver).move_to_element(element)
+        hover.perform()
+
+        # It clicks on first photo to open photo window
+        # first_thumbnail = webdriver.find_element("css selector",'.\_abpo')
+        first_thumbnail = webdriver.find_element("css selector", ".\_aabd")
+
+        first_thumbnail.click()
+        sleep(randint(2, 3))
+
+        try:
+            for x in range(1, 300):
+                # Copies username of user
+                """username = webdriver.find_element_by_xpath('/html/body/div[4]/div[2]/div/article/header/div[2]/div[1]/div[1]/div/a').text
+                print(username)
+                d_users.append(username)"""
+                try:
+                    # Clicks on like button
+                    button_like = webdriver.find_element(
+                        "css selector", ".\_aamw > .\_abl-"
+                    )
+                    button_like.click()
+                    likes += 1
+                    print(format(likes) + " " + "likes on #" + hashtag)
+                except:
+                    print("Like error")
+                # Increaments likes array
+
+                sleep(3)
+
+                try:
+                    # Next picture
+                    webdriver.find_element("css selector", ".\_aaqg .\_ab6-").click()
+                    sleep(randint(2, 4))
+                except:
+                    print("Next picture error")
+        except:
+            # If error occurres, skip to next hashtag
+            print("Oops!", sys.exc_info()[0], "occurred.")
+            continue
+
+    for n in range(0, len(d_users)):
+        prev_user_list.append(d_users[n])
+
+    """ updated_user_df = pd.DataFrame(prev_user_list)
+    updated_user_df.to_csv('{}_users_list.csv'.format(strftime("%Y%m%d-%H%M%S"))) """
+    # Creates file if not there
+    if not (path.isfile(LIKES_LOG_FILE)):
+        with open(LIKES_LOG_FILE, "a") as f:
+            f.write(str(0))
+
+    with open(LIKES_LOG_FILE, "r") as inp:
+        content = inp.read()
+        total_likes = int(content) + int(likes)
+        print(total_likes)
+
+    with open(LIKES_LOG_FILE, "w") as outp:
+        outp.write(str(total_likes))
+    print("Liked {} photos.".format(likes))
+
+    end_time = datetime.now()
+    print("Duration: {}".format(end_time - start_time))
+
+
+def main():
+    try:
+        selenium_instagram_login()
+        # like_hashtag()
+
+    except Exception as e:
+        print(e)
+
+
+if __name__ == "__main__":
+    main()
